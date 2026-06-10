@@ -1,2 +1,8 @@
-//"demo video link"
-https://github.com/karthick-sanjay/incident-management-ai/releases/tag/untagged-ca166031270cc9bbd6c0
+//"demo video link"//
+
+
+
+https://github.com/user-attachments/assets/38916f6e-4e47-4131-ac1a-c05f68f5473d
+
+
+
