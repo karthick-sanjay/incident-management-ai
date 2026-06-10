@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <span class="brand-icon">🛡️</span> Incident Agent
+      </div>
+      <div class="auth-subtitle">Create Operational System Account</div>
+    </div>
+    
+    <div id="alert-container"></div>
+
+    <form id="register-form">
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name</label>
+        <input class="input-control" type="text" id="name" required placeholder="Jane Doe">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Work Email</label>
+        <input class="input-control" type="email" id="email" required placeholder="jane@company.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="input-control" type="password" id="password" required placeholder="Min 6 characters">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="role">System Role</label>
+        <select class="input-control" id="role" required>
+          <option value="support_engineer">Support Engineer</option>
+          <option value="devops_engineer">DevOps Engineer</option>
+          <option value="admin">Administrator</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 10px;">Sign Up</button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 24px; font-size: 14px;">
+      <span style="color: var(--text-secondary);">Already have an account? </span>
+      <a href="login.html" style="color: var(--accent); font-weight: 500; text-decoration: none;">Login</a>
+    </div>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    document.getElementById("register-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+      
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showAlert("alert-container", "Registration completed! Redirecting to login...", "success");
+          setTimeout(() => {
+            window.location.href = "login.html";
+          }, 2000);
+        } else {
+          showAlert("alert-container", data.detail || "Registration failed.", "error");
+        }
+      } catch (err) {
+        showAlert("alert-container", "Connection failed. Please retry.", "error");
+      }
+    });
+  </script>
+</body>
+</html>

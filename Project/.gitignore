@@ -1,0 +1,29 @@
+# Environments
+.env
+venv/
+node_modules/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary Uploads (Ignore contents but keep the folders)
+uploads/*
+!uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+node_backend/uploads/*
+!node_backend/uploads/.gitkeep
+
+# Editor configurations
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Ensure compiled models ARE tracked (do not ignore them!)
+!backend/models/*.joblib
+!backend/models/*.bin

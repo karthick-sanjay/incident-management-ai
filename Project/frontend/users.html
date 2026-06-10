@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item active admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          Administration > <span class="breadcrumbs-current">User Access Profiles</span>
+        </div>
+      </header>
+      
+      <div class="content-body">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Manage Registered User Accounts</span>
+          </div>
+          
+          <div id="alert-container"></div>
+          
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>User Profile</th>
+                  <th>Registered Email</th>
+                  <th>Created Date</th>
+                  <th>System Role Authorization</th>
+                </tr>
+              </thead>
+              <tbody id="users-list-tbody">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-secondary);">Querying user accounts...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    async function loadUsersList() {
+      try {
+        const response = await fetch("/api/users", {
+          headers: getAuthHeaders()
+        });
+        
+        if (response.status === 403) {
+          window.location.href = "index.html";
+          return;
+        }
+        
+        if (!response.ok) return;
+        const users = await response.json();
+        
+        const tbody = document.getElementById("users-list-tbody");
+        tbody.innerHTML = "";
+        
+        users.forEach(user => {
+          const tr = document.createElement("tr");
+          
+          tr.innerHTML = `
+            <td><strong>${user.name}</strong></td>
+            <td><code>${user.email}</code></td>
+            <td>${new Date(user.created_at).toLocaleDateString()}</td>
+            <td>
+              <select class="input-control" style="width: 180px; padding: 6px 12px; font-size: 13px;" onchange="changeUserRole('${user.id}', this.value)">
+                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Administrator</option>
+                <option value="support_engineer" ${user.role === 'support_engineer' ? 'selected' : ''}>Support Engineer</option>
+                <option value="devops_engineer" ${user.role === 'devops_engineer' ? 'selected' : ''}>DevOps Engineer</option>
+              </select>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Failed to load user accounts list:", err);
+      }
+    }
+    
+    async function changeUserRole(userId, newRole) {
+      try {
+        const response = await fetch(`/api/users/${userId}/role?role=${newRole}`, {
+          method: "PUT",
+          headers: getAuthHeaders()
+        });
+        if (response.ok) {
+          showAlert("alert-container", "User authorization updated successfully.", "success");
+          loadUsersList();
+        } else {
+          const data = await response.json();
+          showAlert("alert-container", data.detail || "Failed to update role.", "error");
+        }
+      } catch (err) {
+        showAlert("alert-container", "Connection request error.", "error");
+      }
+    }
+    
+    // Load listing
+    loadUsersList();
+  </script>
+</body>
+</html>

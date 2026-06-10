@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Incident - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item active"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          Incidents > <span class="breadcrumbs-current">Create New Outage Ticket</span>
+        </div>
+      </header>
+      
+      <div class="content-body">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+          <div class="card-header">
+            <span class="card-title">Register Incident & Trigger AI Analysis</span>
+          </div>
+          
+          <div id="alert-container"></div>
+          
+          <form id="create-incident-form">
+            <div class="form-group">
+              <label class="form-label" for="title">Incident Title <span style="color:red;">*</span></label>
+              <input class="input-control" type="text" id="title" required placeholder="Brief title summarizing the outage (e.g. Database connection pool exhaustion)">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="description">Detailed Description <span style="color:red;">*</span></label>
+              <textarea class="input-control" id="description" required placeholder="Describe what failed, which services are affected, and what errors users are seeing."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="git-diff">Git Diff / Code Changes <span style="color:red;">*</span></label>
+              <textarea class="input-control" id="git-diff" required placeholder="Paste recent git diffs or relevant code changes here..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="incident-timeline">Incident Timeline <span style="color:red;">*</span></label>
+              <textarea class="input-control" id="incident-timeline" required placeholder="Paste a known timeline of events here to help the AI understand the sequence of failures..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Attach Server / Application Log Files <span style="color:red;">*</span></label>
+              <div class="drag-drop-zone" id="drop-zone">
+                <span id="drop-zone-text">Drag and drop log files here (.txt, .json, .csv) or click to browse</span>
+                <input type="file" id="file-input" multiple style="display: none;">
+              </div>
+              <div id="file-list" style="margin-top: 12px; font-size: 13px; display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px;">
+              <a href="incidents.html" class="btn btn-secondary">Cancel</a>
+              <button class="btn btn-primary" type="submit" id="btn-submit">Submit & Analyze</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const fileListDiv = document.getElementById("file-list");
+    let attachedFiles = [];
+    
+    // Uploader visual interactions
+    dropZone.addEventListener("click", () => fileInput.click());
+    
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+    
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      handleFiles(e.dataTransfer.files);
+    });
+    
+    fileInput.addEventListener("change", () => {
+      handleFiles(fileInput.files);
+    });
+    
+    function handleFiles(files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 10 * 1024 * 1024) {
+          showAlert("alert-container", `File '${file.filename}' exceeds 10MB limit.`, "error");
+          continue;
+        }
+        attachedFiles.push(file);
+      }
+      renderFileList();
+    }
+    
+    function renderFileList() {
+      fileListDiv.innerHTML = "";
+      if (attachedFiles.length === 0) return;
+      
+      attachedFiles.forEach((file, index) => {
+        const item = document.createElement("div");
+        item.style.display = "flex";
+        item.style.justifyContent = "space-between";
+        item.style.alignItems = "center";
+        item.style.padding = "8px 12px";
+        item.style.backgroundColor = "#F1F5F9";
+        item.style.borderRadius = "4px";
+        
+        item.innerHTML = `
+          <span>📄 <strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)</span>
+          <button type="button" class="btn-logout" onclick="removeFile(${index})" style="background: none; border: none; cursor: pointer;">Remove</button>
+        `;
+        fileListDiv.appendChild(item);
+      });
+    }
+    
+    function removeFile(index) {
+      attachedFiles.splice(index, 1);
+      renderFileList();
+    }
+    
+    document.getElementById("create-incident-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const gitDiff = document.getElementById("git-diff").value;
+      const incidentTimeline = document.getElementById("incident-timeline").value;
+      const btnSubmit = document.getElementById("btn-submit");
+      
+      if (attachedFiles.length === 0) {
+        showAlert("alert-container", "You must attach at least one log file before submitting.", "error");
+        return;
+      }
+      
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = "Analyzing Ticket...";
+      
+      try {
+        // 1. Create Incident
+        const incidentResponse = await fetch("/api/incidents", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ title, description, git_diff: gitDiff, incident_timeline: incidentTimeline })
+        });
+        
+        const incidentData = await incidentResponse.json();
+        
+        if (!incidentResponse.ok) {
+          showAlert("alert-container", incidentData.detail || "Failed to create ticket.", "error");
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = "Submit & Analyze";
+          return;
+        }
+        
+        const incidentId = incidentData.id;
+        
+        // 2. Upload Log files if attached
+        if (attachedFiles.length > 0) {
+          const formData = new FormData();
+          attachedFiles.forEach(file => {
+            formData.append("files", file);
+          });
+          
+          const logResponse = await fetch(`/api/incidents/${incidentId}/logs`, {
+            method: "POST",
+            headers: getAuthHeaders(true),
+            body: formData
+          });
+          
+          if (!logResponse.ok) {
+            const logData = await logResponse.json();
+            showAlert("alert-container", `Ticket created, but log uploads failed: ${logData.detail}`, "error");
+            setTimeout(() => {
+              window.location.href = `incident_detail.html?id=${incidentId}`;
+            }, 3000);
+            return;
+          }
+        }
+        
+        showAlert("alert-container", "Incident registered and AI analysis triggered! Redirecting...", "success");
+        setTimeout(() => {
+          window.location.href = `incident_detail.html?id=${incidentId}`;
+        }, 1500);
+        
+      } catch (err) {
+        showAlert("alert-container", "Network transaction failed. Retry.", "error");
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "Submit & Analyze";
+      }
+    });
+  </script>
+</body>
+</html>

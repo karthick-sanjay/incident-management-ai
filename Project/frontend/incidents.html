@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incidents - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item active"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          System Overview > <span class="breadcrumbs-current">Active Outage Tickets</span>
+        </div>
+      </header>
+      
+      <div class="content-body">
+        <!-- Filters Card -->
+        <div class="card">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+              <label class="form-label" for="search-input">Search Title / Description</label>
+              <input class="input-control" type="text" id="search-input" placeholder="Type to search..." onkeypress="if(event.key === 'Enter') applyFilters()">
+            </div>
+            
+            <div style="width: 140px;">
+              <label class="form-label" for="filter-status">Status</label>
+              <select class="input-control" id="filter-status">
+                <option value="">ALL STATUS</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            
+            <div style="width: 140px;">
+              <label class="form-label" for="filter-severity">Severity</label>
+              <select class="input-control" id="filter-severity">
+                <option value="">ALL SEVERITY</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+
+            <div style="width: 140px;">
+              <label class="form-label" for="filter-category">Category</label>
+              <select class="input-control" id="filter-category">
+                <option value="">ALL CATEGORY</option>
+                <option value="database">Database</option>
+                <option value="network">Network</option>
+                <option value="application">Application</option>
+                <option value="security">Security</option>
+                <option value="infrastructure">Infrastructure</option>
+              </select>
+            </div>
+            
+            <button class="btn btn-primary" onclick="applyFilters()" style="padding: 10px 20px;">Filter</button>
+          </div>
+        </div>
+
+        <!-- Incidents List Table -->
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Incident Ticket</th>
+                  <th>Severity</th>
+                  <th>Category</th>
+                  <th>Assignee</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="incidents-list-tbody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-secondary);">Querying incident queues...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+            <span style="font-size: 13px; color: var(--text-secondary);" id="pagination-info">Showing 0 of 0 tickets</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary" id="btn-prev" onclick="changePage(-1)" style="padding: 6px 12px; font-size: 13px;">Previous</button>
+              <button class="btn btn-secondary" id="btn-next" onclick="changePage(1)" style="padding: 6px 12px; font-size: 13px;">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    let currentPage = 1;
+    const pageLimit = 10;
+    
+    function applyFilters() {
+      currentPage = 1;
+      queryIncidents();
+    }
+    
+    async function queryIncidents() {
+      const search = document.getElementById("search-input").value;
+      const status = document.getElementById("filter-status").value;
+      const severity = document.getElementById("filter-severity").value;
+      const category = document.getElementById("filter-category").value;
+      
+      let url = `/api/incidents?page=${currentPage}&limit=${pageLimit}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (status) url += `&status=${status}`;
+      if (severity) url += `&severity=${severity}`;
+      if (category) url += `&category=${category}`;
+      
+      try {
+        const response = await fetch(url, {
+          headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        const tbody = document.getElementById("incidents-list-tbody");
+        tbody.innerHTML = "";
+        
+        if (data.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 32px;">No matching incidents found.</td></tr>`;
+          document.getElementById("pagination-info").textContent = `Showing 0 of 0 tickets`;
+          document.getElementById("btn-prev").disabled = true;
+          document.getElementById("btn-next").disabled = true;
+          return;
+        }
+        
+        data.data.forEach(inc => {
+          const tr = document.createElement("tr");
+          const assigneeName = inc.assignee ? inc.assignee.name : `<span style="color: var(--text-secondary); font-style: italic;">Unassigned</span>`;
+          
+          tr.innerHTML = `
+            <td>
+              <div style="font-weight: 600; font-size: 14px;">${inc.title}</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Created by ${inc.creator.name} • ${new Date(inc.created_at).toLocaleString()}</div>
+            </td>
+            <td><span class="badge badge-${inc.severity}">${inc.severity}</span></td>
+            <td><span style="font-size: 13px; font-weight: 500;">${inc.category.toUpperCase()}</span></td>
+            <td><span style="font-size: 13px;">${assigneeName}</span></td>
+            <td><span class="badge badge-${inc.status}">${inc.status.replace("_", " ")}</span></td>
+            <td><a class="btn btn-secondary" href="incident_detail.html?id=${inc.id}" style="padding: 6px 12px; font-size: 12px;">Investigate</a></td>
+          `;
+          tbody.appendChild(tr);
+        });
+        
+        // Update pagination UI
+        const start = (currentPage - 1) * pageLimit + 1;
+        const end = Math.min(start + data.data.length - 1, data.total);
+        document.getElementById("pagination-info").textContent = `Showing ${start}-${end} of ${data.total} tickets`;
+        
+        document.getElementById("btn-prev").disabled = currentPage === 1;
+        document.getElementById("btn-next").disabled = end >= data.total;
+        
+      } catch (err) {
+        console.error("Failed to query incident queues:", err);
+      }
+    }
+    
+    function changePage(direction) {
+      currentPage += direction;
+      queryIncidents();
+    }
+    
+    // Initial fetch
+    queryIncidents();
+  </script>
+</body>
+</html>

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Details - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item active"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          Incidents > <span class="breadcrumbs-current" id="breadcrumb-title">Incident Ticket Details</span>
+        </div>
+      </header>
+      
+      <div class="content-body">
+        <!-- Ticket Meta Panel -->
+        <div class="card" style="border-top: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
+            <div>
+              <span class="badge" id="incident-status-badge" style="margin-bottom: 8px;">Open</span>
+              <h1 id="incident-title" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Loading incident title...</h1>
+              <p style="font-size: 13px; color: var(--text-secondary);">
+                Opened by <strong id="incident-creator">Loading...</strong> on <span id="incident-created-at">Loading...</span>
+              </p>
+            </div>
+            
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <!-- Admin Assignment -->
+              <div class="admin-only" style="display: flex; flex-direction: column; gap: 4px;">
+                <label class="form-label" style="font-size: 11px; margin-bottom: 0;">Assignee</label>
+                <select class="input-control" id="assignee-select" style="padding: 6px 12px; font-size: 13px; width: 180px;" onchange="updateAssignment()">
+                  <option value="">Unassigned</option>
+                </select>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label class="form-label" style="font-size: 11px; margin-bottom: 0;">Update Status</label>
+                <select class="input-control" id="status-select" style="padding: 6px 12px; font-size: 13px; width: 140px;" onchange="updateStatus()">
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
+          
+          <div>
+            <h4 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase;">Ticket Description</h4>
+            <p id="incident-description" style="font-size: 14px; white-space: pre-wrap; color: var(--text-primary);">Loading description details...</p>
+          </div>
+          
+          <div id="git-diff-container" style="display: none; margin-top: 20px;">
+            <h4 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase;">Recent Git Diff / Code Changes</h4>
+            <pre id="incident-git-diff" style="font-size: 13px; white-space: pre-wrap; color: var(--text-primary); background-color: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow-x: auto;"></pre>
+          </div>
+
+          <div id="incident-timeline-container" style="display: none; margin-top: 20px;">
+            <h4 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase;">Incident Timeline</h4>
+            <pre id="incident-timeline-display" style="font-size: 13px; white-space: pre-wrap; color: var(--text-primary); background-color: #f8f9fa; border: 1px solid #e2e8f0; padding: 12px; border-radius: 4px; overflow-x: auto;"></pre>
+          </div>
+        </div>
+
+        <!-- AI Analysis Split Grid -->
+        <div class="grid-dashboard">
+          <!-- AI Predictions Card -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🤖 AI Outage Diagnosis</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <div>
+                  <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Triaged Severity</div>
+                  <div id="ai-severity-box" style="margin-top: 4px;"><span class="badge badge-medium">Medium</span></div>
+                </div>
+                <div>
+                  <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Outage Category</div>
+                  <div id="ai-category-box" style="margin-top: 4px; font-weight: 600; font-size: 15px; color: var(--primary);">Loading...</div>
+                </div>
+              </div>
+              
+              <div>
+                <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Probable Root Cause</div>
+                <div id="ai-root-cause" style="font-size: 14px; font-weight: 600; padding: 12px; background-color: #FFFBEB; border-left: 4px solid var(--warning); border-radius: var(--radius-sm);">
+                  Analyzing metrics logs to isolate root cause...
+                </div>
+              </div>
+              
+            </div>
+          </div>
+          
+          <!-- Vector Search Historical Context -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📖 FAISS Historical Matches</span>
+            </div>
+            <div id="historical-incidents-container" style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="color: var(--text-secondary); font-size: 13px; text-align: center; padding: 24px;">Looking up similar past incidents...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG Recommended Resolution Walkthrough -->
+        <div class="card">
+          <div class="card-header" style="border-bottom-color: rgba(0, 180, 216, 0.2);">
+            <span class="card-title" style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
+              <span>💡</span> AI Recommended Resolution Walkthrough
+            </span>
+          </div>
+          <div id="ai-recommendation-content" style="font-size: 14px; line-height: 1.7; white-space: pre-wrap; padding: 16px; background-color: #F8FAFC; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            Synthesizing prompts context inputs...
+          </div>
+        </div>
+
+        <!-- Root Cause Analysis (RCA) -->
+        <div class="card" id="rca-card" style="display: none;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="card-title" style="color: var(--warning); display: flex; align-items: center; gap: 8px;">
+              <span>📝</span> Post-Incident RCA
+            </span>
+            <div id="rca-actions">
+              <button id="btn-generate-rca" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; background-color: #F59E0B;" onclick="generateRCA()">Generate RCA</button>
+              <button id="btn-download-rca" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; display: none;" onclick="downloadRCA()">Download RCA Document</button>
+            </div>
+          </div>
+          <div id="rca-content" style="font-size: 14px; line-height: 1.7; white-space: pre-wrap; padding: 16px; display: none;">
+          </div>
+        </div>
+
+        <!-- Uploaded Logs and Comments Split -->
+        <div class="grid-dashboard">
+          <!-- Logs Telemetries -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📁 Parsed Log Telemetries</span>
+            </div>
+            <div id="logs-list-container" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 24px;">No log attachments parsed on this ticket.</div>
+            </div>
+          </div>
+          
+          <!-- Comments / Notes Feed -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">💬 Collaboration & Resolution Notes</span>
+            </div>
+            
+            <div id="comments-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+              <div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 24px;">No notes yet. Add your investigation logs below.</div>
+            </div>
+            
+            <form id="comment-form">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <textarea class="input-control" id="comment-content" required placeholder="Type notes or commands run..." style="min-height: 70px;"></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit" style="float: right; padding: 6px 16px; font-size: 13px;">Add Note</button>
+              <div style="clear: both;"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const incidentId = urlParams.get("id");
+    
+    if (!incidentId) {
+      window.location.href = "incidents.html";
+    }
+    
+    let currentIncident = null;
+    
+    async function loadEngineers() {
+      try {
+        const response = await fetch("/api/users/engineers", {
+          headers: getAuthHeaders()
+        });
+        if (!response.ok) return;
+        
+        const engineers = await response.json();
+        const select = document.getElementById("assignee-select");
+        engineers.forEach(eng => {
+          const opt = document.createElement("option");
+          opt.value = eng.id;
+          opt.textContent = `${eng.name} (${eng.role.replace("_", " ").toUpperCase()})`;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("Failed to load engineers selection:", err);
+      }
+    }
+    
+    async function loadIncidentDetails() {
+      try {
+        const response = await fetch(`/api/incidents/${incidentId}`, {
+          headers: getAuthHeaders()
+        });
+        
+        if (response.status === 404 || response.status === 403) {
+          window.location.href = "incidents.html";
+          return;
+        }
+        
+        const inc = await response.json();
+        currentIncident = inc;
+        
+        // Update Title & breadcrumbs
+        document.getElementById("incident-title").textContent = inc.title;
+        document.getElementById("breadcrumb-title").textContent = `Ticket ID: ...${inc.id.substring(24)}`;
+        document.getElementById("incident-creator").textContent = inc.creator.name;
+        document.getElementById("incident-created-at").textContent = new Date(inc.created_at).toLocaleString();
+        document.getElementById("incident-description").textContent = inc.description;
+        
+        if (inc.git_diff) {
+          document.getElementById("git-diff-container").style.display = "block";
+          document.getElementById("incident-git-diff").textContent = inc.git_diff;
+        } else {
+          document.getElementById("git-diff-container").style.display = "none";
+        }
+        
+        if (inc.incident_timeline) {
+          document.getElementById("incident-timeline-container").style.display = "block";
+          document.getElementById("incident-timeline-display").textContent = inc.incident_timeline;
+        } else {
+          document.getElementById("incident-timeline-container").style.display = "none";
+        }
+        
+        // Update Status Selector
+        document.getElementById("status-select").value = inc.status;
+        const statusBadge = document.getElementById("incident-status-badge");
+        statusBadge.className = `badge badge-${inc.status}`;
+        statusBadge.textContent = inc.status.replace("_", " ").toUpperCase();
+        
+        // Update Assignee select
+        document.getElementById("assignee-select").value = inc.assigned_to || "";
+        
+        // Update ML Diagnostics
+        if (inc.predictions && inc.predictions.length > 0) {
+          const pred = inc.predictions[0];
+          
+          document.getElementById("ai-severity-box").innerHTML = `<span class="badge badge-${pred.severity_pred}">${pred.severity_pred.toUpperCase()}</span>`;
+          document.getElementById("ai-category-box").textContent = pred.category_pred.toUpperCase();
+          document.getElementById("ai-root-cause").textContent = pred.root_cause_pred;
+        } else {
+          document.getElementById("ai-root-cause").textContent = "AI model classification still running...";
+        }
+        
+        // Update Recommendations
+        if (inc.recommendations && inc.recommendations.length > 0) {
+          document.getElementById("ai-recommendation-content").innerHTML = formatRecommendationText(inc.recommendations[0].recommendation_text);
+        } else {
+          document.getElementById("ai-recommendation-content").textContent = "RAG compilation in progress...";
+        }
+        
+        // Handle RCA View State
+        const rcaCard = document.getElementById("rca-card");
+        const btnGenerate = document.getElementById("btn-generate-rca");
+        const btnDownload = document.getElementById("btn-download-rca");
+        const rcaContent = document.getElementById("rca-content");
+        
+        // Always show the RCA card, but disable actions if not resolved
+        rcaCard.style.display = "block";
+
+        if (inc.status === "resolved" || inc.status === "closed") {
+          btnGenerate.disabled = false;
+          if (inc.rcas && inc.rcas.length > 0) {
+            btnGenerate.textContent = "Regenerate RCA";
+            btnDownload.style.display = "inline-block";
+            rcaContent.style.display = "block";
+            rcaContent.innerHTML = formatRecommendationText(inc.rcas[0].document_content);
+          } else {
+            btnGenerate.textContent = "Generate RCA";
+            btnDownload.style.display = "none";
+            rcaContent.style.display = "none";
+          }
+        } else {
+          btnGenerate.disabled = true;
+          btnGenerate.textContent = "RCA Requires Resolved Status";
+          btnDownload.style.display = "none";
+          rcaContent.style.display = "none";
+        }
+        
+        // Render logs list
+        renderLogs(inc.logs);
+        
+        // Render comments
+        renderComments(inc.comments);
+        
+        // Fetch similarity references
+        fetchSimilarIncidents();
+        
+      } catch (err) {
+        console.error("Failed to load incident detail parameters:", err);
+      }
+    }
+    
+    function formatRecommendationText(text) {
+      // Basic markdown styling for commands
+      return text.replace(/`([^`]+)`/g, '<code class="input-control" style="padding: 2px 6px; font-family: var(--font-mono); background-color: #F1F5F9; font-size: 13px; font-weight: 500;">$1</code>');
+    }
+    
+    function renderLogs(logs) {
+      const container = document.getElementById("logs-list-container");
+      if (!logs || logs.length === 0) return;
+      
+      container.innerHTML = "";
+      logs.forEach(log => {
+        const item = document.createElement("div");
+        item.style.border = "1px solid var(--border)";
+        item.style.borderRadius = "4px";
+        item.style.padding = "12px";
+        
+        item.innerHTML = `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+            <strong>📄 ${log.filename}</strong>
+            <span style="color: var(--text-secondary);">${new Date(log.uploaded_at).toLocaleString()}</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); padding: 8px; background-color: #F8FAFC; border-radius: 4px;">
+            ${log.parsed_content.summary}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+    
+    async function fetchSimilarIncidents() {
+      try {
+        // Query similarity links
+        const response = await fetch(`/api/incidents/${incidentId}`, { headers: getAuthHeaders() });
+        const inc = await response.json();
+        
+        const container = document.getElementById("historical-incidents-container");
+        container.innerHTML = "";
+        
+        const refs = inc.historical_references || [];
+        
+        if (refs.length === 0) {
+          // No Relevant Match Fallback UI
+          const fallbackDiv = document.createElement("div");
+          fallbackDiv.style.padding = "16px";
+          fallbackDiv.style.backgroundColor = "#F8FAFC";
+          fallbackDiv.style.border = "1px solid var(--border)";
+          fallbackDiv.style.borderRadius = "6px";
+          fallbackDiv.style.textAlign = "center";
+          fallbackDiv.innerHTML = `
+            <div style="font-weight: 600; color: #334155; margin-bottom: 8px;">No closely related incidents were found.</div>
+            <div style="font-size: 13px; color: #64748B;">The incident appears to be unique or insufficiently represented in the historical knowledge base.</div>
+          `;
+          container.appendChild(fallbackDiv);
+          return;
+        }
+        
+        refs.forEach(item => {
+          const div = document.createElement("div");
+          div.style.padding = "12px";
+          div.style.backgroundColor = "#F8FAFC";
+          div.style.border = "1px solid var(--border)";
+          div.style.borderRadius = "4px";
+          
+          let confBadge = '';
+          if (item.similarity_score >= 0.90) {
+            confBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 12px; background-color: #DCFCE7; color: #166534; font-weight: 600;">High Confidence</span>`;
+          } else if (item.similarity_score >= 0.80) {
+            confBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 12px; background-color: #FEF3C7; color: #92400E; font-weight: 600;">Medium Confidence</span>`;
+          } else {
+            confBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 12px; background-color: #F1F5F9; color: #475569; font-weight: 600;">Low Confidence</span>`;
+          }
+          
+          div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px;">
+              <strong>${item.title}</strong>
+              ${confBadge}
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              <strong>Fix:</strong> ${item.fix || "No root cause saved."}
+            </div>
+            <div style="font-size: 11px; color: #94A3B8; margin-top: 6px;">
+              Relevance Score: ${parseFloat(item.similarity_score).toFixed(2)}
+            </div>
+          `;
+          container.appendChild(div);
+        });
+        
+      } catch (err) {
+        console.error("Failed to load historical incidents:", err);
+      }
+    }
+    
+    function renderComments(comments) {
+      const container = document.getElementById("comments-container");
+      if (!comments || comments.length === 0) return;
+      
+      container.innerHTML = "";
+      comments.forEach(com => {
+        const div = document.createElement("div");
+        div.style.padding = "8px 12px";
+        div.style.backgroundColor = "#F9FAFB";
+        div.style.borderRadius = "4px";
+        div.style.border = "1px solid var(--border)";
+        
+        div.innerHTML = `
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">
+            <strong>${com.user.name} (${com.user.role.replace("_", " ").toUpperCase()})</strong>
+            <span>${new Date(com.created_at).toLocaleString()}</span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-primary); white-space: pre-wrap;">${com.content}</div>
+        `;
+        container.appendChild(div);
+      });
+      // Scroll to bottom of notes container
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    async function updateStatus() {
+      const statusVal = document.getElementById("status-select").value;
+      try {
+        const response = await fetch(`/api/incidents/${incidentId}/status`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: statusVal })
+        });
+        if (response.ok) {
+          loadIncidentDetails();
+        }
+      } catch (err) {
+        console.error("Status update execution error:", err);
+      }
+    }
+
+    async function updateAssignment() {
+      const assigneeId = document.getElementById("assignee-select").value;
+      try {
+        const response = await fetch(`/api/incidents/${incidentId}/status`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ assigned_to: assigneeId || null })
+        });
+        if (response.ok) {
+          loadIncidentDetails();
+        }
+      } catch (err) {
+        console.error("Assignment execution error:", err);
+      }
+    }
+    
+    document.getElementById("comment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const contentEl = document.getElementById("comment-content");
+      const content = contentEl.value.trim();
+      if (!content) return;
+      
+      try {
+        const response = await fetch(`/api/incidents/${incidentId}/comments`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ content })
+        });
+        if (response.ok) {
+          contentEl.value = "";
+          loadIncidentDetails();
+        }
+      } catch (err) {
+        console.error("Failed to post comment:", err);
+      }
+    });
+    
+    async function generateRCA() {
+      const btn = document.getElementById("btn-generate-rca");
+      btn.disabled = true;
+      btn.textContent = "Generating RCA... (This takes a moment)";
+      
+      try {
+        const response = await fetch(`/api/incidents/${incidentId}/rca`, {
+          method: "POST",
+          headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+          // AI might take time, but the Node proxy returns instantly or waits depending on how we implemented it.
+          // Wait a moment and reload
+          setTimeout(loadIncidentDetails, 2000);
+        } else {
+          alert("Failed to generate RCA. Check server logs.");
+          btn.disabled = false;
+          btn.textContent = "Generate RCA";
+        }
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = "Generate RCA";
+      }
+    }
+    
+    function downloadRCA() {
+      if (!currentIncident || !currentIncident.rcas || currentIncident.rcas.length === 0) return;
+      
+      const rcaText = currentIncident.rcas[0].document_content;
+      const title = currentIncident.title;
+      
+      // Combine into a full document
+      const fullDocument = `INCIDENT ROOT CAUSE ANALYSIS\n============================\n\n` +
+                           `TICKET ID: ${currentIncident.id}\n` +
+                           `TITLE: ${title}\n` +
+                           `SEVERITY: ${currentIncident.severity.toUpperCase()}\n` +
+                           `STATUS: ${currentIncident.status.toUpperCase()}\n` +
+                           `DATE GENERATED: ${new Date().toLocaleString()}\n\n` +
+                           `============================\n\n` +
+                           `${rcaText}`;
+                           
+      const blob = new Blob([fullDocument], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `RCA_${currentIncident.id.substring(0, 8)}.md`;
+      document.body.appendChild(a);
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // Core loads
+    (async () => {
+      await loadEngineers();
+      await loadIncidentDetails();
+      
+      // Auto-refresh polling every 10 seconds to catch background AI updates
+      setInterval(loadIncidentDetails, 10000);
+    })();
+  </script>
+</body>
+</html>

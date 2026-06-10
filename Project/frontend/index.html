@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          System Overview > <span class="breadcrumbs-current">Dashboard</span>
+        </div>
+      </header>
+      
+      <div class="content-body">
+        <!-- Metrics Row -->
+        <div class="metrics-row">
+          <div class="metric-card">
+            <span class="metric-title">Active Outages</span>
+            <span class="metric-value" id="val-active-tickets">0</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">Mean Time to Resolve</span>
+            <span class="metric-value" id="val-mttr">0.0m</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">Open Tickets</span>
+            <span class="metric-value" id="val-open-tickets">0</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">In Progress</span>
+            <span class="metric-value" id="val-progress-tickets">0</span>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="grid-dashboard">
+          <!-- Trends Chart -->
+          <div class="card" style="height: 380px;">
+            <div class="card-header">
+              <span class="card-title">Incident Trends (Last 7 Days)</span>
+            </div>
+            <div style="position: relative; height: 280px; width: 100%;">
+              <canvas id="chart-trends"></canvas>
+            </div>
+          </div>
+          
+          <!-- Severity Chart -->
+          <div class="card" style="height: 380px;">
+            <div class="card-header">
+              <span class="card-title">Severity Breakdown</span>
+            </div>
+            <div style="position: relative; height: 280px; width: 100%;">
+              <canvas id="chart-severity"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories & Lists Row -->
+        <div class="grid-dashboard">
+          <!-- Active list table -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recent Active Outages</span>
+              <a href="incidents.html" style="font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500;">View All</a>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Incident</th>
+                    <th>Severity</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="active-incidents-table-body">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary);">Querying active tickets...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Incident Volume by Category -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Outages by Service Category</span>
+            </div>
+            <div style="position: relative; height: 250px; width: 100%;">
+              <canvas id="chart-category"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+  <script src="static/js/charts.js"></script>
+  <script>
+    async function loadDashboardData() {
+      try {
+        const response = await fetch("/api/analytics/dashboard", {
+          headers: getAuthHeaders()
+        });
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        
+        // Update metric labels
+        document.getElementById("val-active-tickets").textContent = data.active_tickets;
+        document.getElementById("val-mttr").textContent = data.mttr_minutes + "m";
+        document.getElementById("val-open-tickets").textContent = data.status_counts.open || 0;
+        document.getElementById("val-progress-tickets").textContent = data.status_counts.in_progress || 0;
+        
+        // Load Charts
+        renderDashboardCharts(data);
+      } catch (err) {
+        console.error("Dashboard analytics loading failed:", err);
+      }
+    }
+    
+    async function loadRecentIncidents() {
+      try {
+        const response = await fetch("/api/incidents?page=1&limit=5", {
+          headers: getAuthHeaders()
+        });
+        if (!response.ok) return;
+        
+        const resData = await response.json();
+        const tbody = document.getElementById("active-incidents-table-body");
+        tbody.innerHTML = "";
+        
+        if (resData.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No active tickets. System is fully operational.</td></tr>`;
+          return;
+        }
+        
+        resData.data.forEach(inc => {
+          const tr = document.createElement("tr");
+          
+          tr.innerHTML = `
+            <td>
+              <div style="font-weight: 600;">${inc.title}</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Opened ${new Date(inc.created_at).toLocaleString()}</div>
+            </td>
+            <td><span class="badge badge-${inc.severity}">${inc.severity}</span></td>
+            <td><span style="font-weight: 500; font-size: 13px;">${inc.category.toUpperCase()}</span></td>
+            <td><span class="badge badge-${inc.status}">${inc.status.replace("_", " ")}</span></td>
+            <td><a class="btn btn-secondary" href="incident_detail.html?id=${inc.id}" style="padding: 6px 12px; font-size: 12px;">Investigate</a></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Recent incidents list query failed:", err);
+      }
+    }
+    
+    // Initial fetch
+    loadDashboardData();
+    loadRecentIncidents();
+    
+    // Set periodic polling refresh (30 seconds)
+    setInterval(() => {
+      loadDashboardData();
+      loadRecentIncidents();
+    }, 30000);
+  </script>
+</body>
+</html>

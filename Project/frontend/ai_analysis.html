@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Diagnostics - Incident Management Agent</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-title">Incident Agent</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="index.html"><span class="menu-item-icon">📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="incidents.html"><span class="menu-item-icon">⚙️</span> Incidents</a></li>
+        <li class="menu-item"><a href="create_incident.html"><span class="menu-item-icon">➕</span> Create Incident</a></li>
+        <li class="menu-item"><a href="reports.html"><span class="menu-item-icon">📈</span> Reports</a></li>
+        <li class="menu-item admin-only"><a href="users.html"><span class="menu-item-icon">👥</span> User Management</a></li>
+        <li class="menu-item"><a href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span class="user-tag" id="user-name-display">Loading...</span>
+        <span class="user-role" id="user-role-display">Engineer</span>
+        <br>
+        <a href="#" class="btn-logout" onclick="logout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="breadcrumbs">
+          AI Systems > <span class="breadcrumbs-current">Under the Hood Diagnostics</span>
+        </div>
+      </header>
+      
+      <div class="content-body" style="max-width: 900px; margin: 0 auto;">
+        <!-- ML Pipeline Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Classical ML Classifier Pipeline Parameters</span>
+          </div>
+          <div style="font-size: 14px; color: var(--text-primary); line-height: 1.6; display: flex; flex-direction: column; gap: 16px;">
+            <div>
+              <strong>Feature Extraction Method:</strong>
+              <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; margin-top: 6px;">
+                sklearn.feature_extraction.text.TfidfVectorizer(max_features=2000, ngram_range=(1,2))
+              </div>
+            </div>
+
+            <div>
+              <strong>Category Classification Model:</strong>
+              <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; margin-top: 6px;">
+                sklearn.ensemble.RandomForestClassifier(n_estimators=100, max_depth=10, class_weight='balanced')
+              </div>
+            </div>
+            
+            <div>
+              <strong>Severity Categorization Model:</strong>
+              <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; margin-top: 6px;">
+                xgboost.XGBClassifier(n_estimators=150, max_depth=5, learning_rate=0.08)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Semantic Search & Embeddings Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Embedding Generation & Similarity Indexing (FAISS)</span>
+          </div>
+          <div style="font-size: 14px; color: var(--text-primary); line-height: 1.6; display: flex; flex-direction: column; gap: 16px;">
+            <div>
+              <strong>Transformer Vector Model:</strong>
+              <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; margin-top: 6px;">
+                sentence_transformers.SentenceTransformer("all-MiniLM-L6-v2")
+              </div>
+              <span style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: block;">* Dimensions: 384-dim dense vectors. Similarity distance formula: L2 Euclidean distance.</span>
+            </div>
+
+            <div>
+              <strong>Vector Database Engine:</strong>
+              <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; margin-top: 6px;">
+                faiss.IndexFlatL2(384)
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/app.js"></script>
+</body>
+</html>
