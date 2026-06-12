@@ -262,7 +262,7 @@ Expected output: `Node.js API Gateway & Frontend Server running on http://127.0.
 Open a separate terminal, activate your virtual environment, and run:
 
 ```bash
-cd backend
+cd venv/Scripts
 python -m uvicorn app.main:app --port 8001
 ```
 
